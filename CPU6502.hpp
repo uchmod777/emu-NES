@@ -5,10 +5,12 @@ class CPU6502
     public:
         void I_ADC(uint8_t operand);  // Add with Carry
         void I_AND(uint8_t operand);   // Bitwise AND
-        void I_ASL();  // Arithmetic Shift Left
-        void I_BCC();  // Branch if Carry Clear
-        void I_BEQ();  // Branch if Equal
-        void I_BIT();  // Bit Test
+        void I_ASL_ACC();  // Arithmetic Shift Left, Accumulator
+        void I_ASL(uint16_t addr);  // Arithmetic Shift Left
+        void I_BCC(int8_t offset);  // Branch if Carry Clear
+        void I_BCS(int8_t offset);  // Branch if Carry Set
+        void I_BEQ(int8_t offset);  // Branch if Equal
+        void I_BIT(uint8_t operand);  // Bit Test
         void I_BMI();  // Branch if Minus
         void I_BNE();  // Branch if Not Equal
         void I_BPL();  // Branch if Plus
@@ -129,24 +131,32 @@ class CPU6502
 
                 uint8_t opcode = fetch();
                 switch (opcode) {
-                    case 0x69: I_ADC(immediate()); cycles = 2; break;
-                    case 0x65: I_ADC(read(zeroPage())); cycles = 3; break;
+                    case 0x69: I_ADC(immediate());       cycles = 2; break;
+                    case 0x65: I_ADC(read(zeroPage()));  cycles = 3; break;
                     case 0x75: I_ADC(read(zeroPageX())); cycles = 4; break;
                     case 0x6D: I_ADC(read(absolute()));  cycles = 4; break;
                     case 0x7D: I_ADC(read(absoluteX())); cycles = 4; break;
                     case 0x79: I_ADC(read(absoluteY())); cycles = 4; break;
                     case 0x61: I_ADC(read(indirectX())); cycles = 6; break;
                     case 0x71: I_ADC(read(indirectY())); cycles = 5; break;
-                    case 0x29: I_AND(immediate()); cycles = 2; break;
-                    case 0x25: I_AND(read(zeroPage())); cycles = 3; break;
+                    case 0x29: I_AND(immediate());       cycles = 2; break;
+                    case 0x25: I_AND(read(zeroPage()));  cycles = 3; break;
                     case 0x35: I_AND(read(zeroPageX())); cycles = 4; break;
                     case 0x2D: I_AND(read(absolute()));  cycles = 4; break;
                     case 0x3D: I_AND(read(absoluteX())); cycles = 4; break;
                     case 0x39: I_AND(read(absoluteY())); cycles = 4; break;
                     case 0x21: I_AND(read(indirectX())); cycles = 6; break;
                     case 0x31: I_AND(read(indirectY())); cycles = 5; break;
-                    
-                    
+                    case 0x0A: I_ASL_ACC();              cycles = 2; break;
+                    case 0x06: I_ASL(zeroPage());        cycles = 5; break;
+                    case 0x16: I_ASL(zeroPageX());       cycles = 6; break;
+                    case 0x0E: I_ASL(absolute());        cycles = 6; break;
+                    case 0x1E: I_ASL(absoluteX());       cycles = 7; break;
+                    case 0x90: I_BCC((int8_t)fetch());   cycles = 2; break;
+                    case 0xB0: I_BCS((int8_t)fetch());   cycles = 2; break;
+                    case 0xF0: I_BEQ((int8_t)fetch());   cycles = 2; break;
+                    case 0x24: I_BIT(read(zeroPage()));  cycles = 3; break;
+                    case 0x2C: I_BIT(read(absolute()));  cycles = 4; break;
                     // ... all 256 opcodes
                     default: break;  // illegal opcodes
                 }
