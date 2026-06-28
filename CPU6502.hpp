@@ -59,4 +59,14 @@ class CPU6502
         void I_TXS();  // Transfer X to Stack Pointer
         void I_TYA();  // Transfer Y to A
     private:
+        uint8_t  A;    // Accumulator
+        uint8_t  X;    // Index X
+        uint8_t  Y;    // Index Y
+        uint8_t  SP;   // Stack Pointer (offset from 0x0100)
+        uint16_t PC;   // Program Counter
+        uint8_t  P;    // Status Flags: N V - B D I Z C
+        uint16_t memory[65536];
+        enum Flags { C=0x01, Z=0x02, I=0x04, D=0x08, B=0x10, U=0x20, V=0x40, N=0x80 };
+        uint8_t getFlag(uint8_t f)  { return (P & f) ? 1 : 0;}
+        void    setFlag(uint8_t f, bool v) { v ? (P |= f) : (P &= ~f);}
 };
