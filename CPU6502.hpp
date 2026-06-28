@@ -3,8 +3,8 @@
 class CPU6502 
 {
     public:
-        void I_ADC();  // Add with Carry
-        void I_AND();  // Bitwise AND
+        void I_ADC(uint8_t operand);  // Add with Carry
+        void I_AND(uint8_t operand);   // Bitwise AND
         void I_ASL();  // Arithmetic Shift Left
         void I_BCC();  // Branch if Carry Clear
         void I_BEQ();  // Branch if Equal
@@ -59,14 +59,97 @@ class CPU6502
         void I_TXS();  // Transfer X to Stack Pointer
         void I_TYA();  // Transfer Y to A
     private:
-        uint8_t  A;    // Accumulator
-        uint8_t  X;    // Index X
-        uint8_t  Y;    // Index Y
-        uint8_t  SP;   // Stack Pointer (offset from 0x0100)
-        uint16_t PC;   // Program Counter
-        uint8_t  P;    // Status Flags: N V - B D I Z C
-        uint16_t memory[65536];
+        // Components
+        uint8_t  A;       // Accumulator
+        uint8_t  X;       // Index X
+        uint8_t  Y;       // Index Y
+        uint8_t  SP;      // Stack Pointer (offset from 0x0100)
+        uint16_t PC;      // Program Counter
+        uint8_t  P;       // Status Flags: N V - B D I Z C
+        uint8_t  cycles;  // Remaining cycles for current instruction
+
+        // Memory
+        uint8_t  memory[65536];
+        uint8_t  read(uint16_t addr)                { return memory[addr]; }
+        void     write(uint16_t addr, uint8_t data) { memory[addr] = data; }
+        uint8_t  fetch()                            { return read(PC++); }
+        
+        // Flags
         enum Flags { C=0x01, Z=0x02, I=0x04, D=0x08, B=0x10, U=0x20, V=0x40, N=0x80 };
-        uint8_t getFlag(uint8_t f)  { return (P & f) ? 1 : 0;}
+        uint8_t getFlag(uint8_t f)         { return (P & f) ? 1 : 0;}
         void    setFlag(uint8_t f, bool v) { v ? (P |= f) : (P &= ~f);}
+
+        // Addressing
+        uint8_t  immediate()  { return fetch(); }
+        uint16_t zeroPage()   { return fetch(); }
+        uint16_t zeroPageX()  { return (fetch() + X) & 0xFF; }
+        uint16_t zeroPageY()  { return (fetch() + Y) & 0xFF; }
+        uint16_t absolute()   { uint16_t lo = fetch(); return lo | (fetch() << 8); }
+        uint16_t absoluteX() 
+        {
+            uint16_t base = absolute();
+            uint16_t addr = base + X;
+            if ((base & 0xFF00) != (addr & 0xFF00))
+            {
+                cycles++;  // Page boundary penalty
+            }
+            return addr;
+        }
+        uint16_t absoluteY()
+        {
+            uint16_t base = absolute();
+            uint16_t addr = base + Y;
+            if ((base & 0xFF00) != (addr & 0xFF00))
+            {
+                cycles++;  // Page boundary penalty
+            }
+            return addr;
+        }
+        uint16_t indirectX()  { uint8_t base = (fetch() + X) & 0xFF;
+                                return read(base) | (read((base+1) & 0xFF) << 8); }
+        uint16_t indirectY()
+        {
+            uint8_t base = fetch();
+            uint16_t addr = read(base) | (read((base + 1) & 0xFF) << 8);
+            uint16_t result = addr + Y;
+            if ((addr & 0xFF00) != (result & 0xFF00))
+            {
+                cycles++;  // Page boundary penalty
+            }
+            return result;
+        }
+
+        // Stack
+        void push(uint8_t val) { write(0x0100 + SP--, val); }
+        uint8_t pop()          { return read(0x0100 + ++SP); }
+
+        // CPU Fetch, Decode, Execute
+        void clock() {
+            if (cycles = 0) {
+
+                uint8_t opcode = fetch();
+                switch (opcode) {
+                    case 0x69: I_ADC(immediate()); cycles = 2; break;
+                    case 0x65: I_ADC(read(zeroPage())); cycles = 3; break;
+                    case 0x75: I_ADC(read(zeroPageX())); cycles = 4; break;
+                    case 0x6D: I_ADC(read(absolute()));  cycles = 4; break;
+                    case 0x7D: I_ADC(read(absoluteX())); cycles = 4; break;
+                    case 0x79: I_ADC(read(absoluteY())); cycles = 4; break;
+                    case 0x61: I_ADC(read(indirectX())); cycles = 6; break;
+                    case 0x71: I_ADC(read(indirectY())); cycles = 5; break;
+                    case 0x29: I_AND(immediate()); cycles = 2; break;
+                    case 0x25: I_AND(read(zeroPage())); cycles = 3; break;
+                    case 0x35: I_AND(read(zeroPageX())); cycles = 4; break;
+                    case 0x2D: I_AND(read(absolute()));  cycles = 4; break;
+                    case 0x3D: I_AND(read(absoluteX())); cycles = 4; break;
+                    case 0x39: I_AND(read(absoluteY())); cycles = 4; break;
+                    case 0x21: I_AND(read(indirectX())); cycles = 6; break;
+                    case 0x31: I_AND(read(indirectY())); cycles = 5; break;
+                    
+                    
+                    // ... all 256 opcodes
+                    default: break;  // illegal opcodes
+                }
+            }
+        }
 };
