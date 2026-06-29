@@ -112,3 +112,51 @@ void CPU6502::I_BIT(uint8_t operand)
 
     setFlag(N, operand & 0x80);
 }
+
+void CPU6502::I_BMI(int8_t offset)
+{
+    if (getFlag(N))
+    {
+        cycles++;  // Branch taken penalty
+
+        uint16_t target = PC + offset;
+        if ((PC & 0xFF00) != (target & 0xFF00))
+        {
+            cycles++;  // Page boundary penalty
+        }
+
+        PC = target;
+    }
+}
+
+void CPU6502::I_BNE(int8_t offset)
+{
+    if (!getFlag(Z))
+    {
+        cycles++;  // Branch taken penalty
+
+        uint16_t target = PC + offset;
+        if ((PC & 0xFF00) != (target & 0xFF00))
+        {
+            cycles++;  // Page boundary penalty
+        }
+
+        PC = target;
+    }
+}
+
+void CPU6502::I_BPL(int8_t offset)
+{
+    if (!getFlag(N))
+    {
+        cycles++;  // Branch taken penalty
+
+        uint16_t target = PC + offset;
+        if ((PC & 0xFF00) != (target & 0xFF00))
+        {
+            cycles++;  // Page boundary penalty
+        }
+
+        PC = target;
+    }
+}

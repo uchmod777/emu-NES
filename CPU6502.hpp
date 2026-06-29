@@ -11,9 +11,9 @@ class CPU6502
         void I_BCS(int8_t offset);  // Branch if Carry Set
         void I_BEQ(int8_t offset);  // Branch if Equal
         void I_BIT(uint8_t operand);  // Bit Test
-        void I_BMI();  // Branch if Minus
-        void I_BNE();  // Branch if Not Equal
-        void I_BPL();  // Branch if Plus
+        void I_BMI(int8_t offset);  // Branch if Minus
+        void I_BNE(int8_t offset);  // Branch if Not Equal
+        void I_BPL(int8_t offset);  // Branch if Plus
         void I_BRK();  // Break (software IRQ - interrupt request)
         void I_BVC();  // Branch if Overflow Clear
         void I_BVS();  // Branch if Overflow Set
@@ -127,8 +127,7 @@ class CPU6502
 
         // CPU Fetch, Decode, Execute
         void clock() {
-            if (cycles = 0) {
-
+            if (cycles == 0) {
                 uint8_t opcode = fetch();
                 switch (opcode) {
                     case 0x69: I_ADC(immediate());       cycles = 2; break;
@@ -157,9 +156,13 @@ class CPU6502
                     case 0xF0: I_BEQ((int8_t)fetch());   cycles = 2; break;
                     case 0x24: I_BIT(read(zeroPage()));  cycles = 3; break;
                     case 0x2C: I_BIT(read(absolute()));  cycles = 4; break;
+                    case 0x30: I_BMI((int8_t)fetch());   cycles = 2; break;
+                    case 0xD0: I_BNE((int8_t)fetch());   cycles = 2; break;
+                    case 0x10: I_BPL((int8_t)fetch());   cycles = 2; break;
                     // ... all 256 opcodes
                     default: break;  // illegal opcodes
                 }
             }
+            cycles--;
         }
 };
