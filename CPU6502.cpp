@@ -160,3 +160,28 @@ void CPU6502::I_BPL(int8_t offset)
         PC = target;
     }
 }
+
+void CPU6502::I_BRK()
+{
+    push((PC >> 8) & 0xFF);
+    push(PC & 0xFF);
+    push(P | 0x30);  // 4th bit (B) and 5th bit (U)
+    setFlag(I, true);
+    PC = read(0xFFFE) | (read(0xFFFF) << 8);
+}
+
+void CPU6502::I_BVC(int8_t offset)
+{
+    if (!getFlag(V))
+    {
+        cycles++;  // Branch penalty
+
+        uint16_t target = PC + offset;
+        if ((PC & 0xFF00) != (target & 0xFF00))
+        {
+            cycles++;  // Page boundary penalty
+        }
+
+        PC = target;
+    }
+}
