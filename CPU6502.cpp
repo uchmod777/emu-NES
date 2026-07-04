@@ -185,3 +185,19 @@ void CPU6502::I_BVC(int8_t offset)
         PC = target;
     }
 }
+
+void CPU6502::I_BVS(int8_t offset)
+{
+    if (getFlag(V))
+    {
+        cycles++;  // Branch penalty
+
+        uint16_t target = PC + offset;
+        if ((PC & 0xFF00) != (target & 0xFF00))
+        {
+            cycles++;  // Page boundary penalty
+        }
+
+        PC = target;
+    }
+}
