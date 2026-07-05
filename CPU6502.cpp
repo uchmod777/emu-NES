@@ -250,3 +250,28 @@ void CPU6502::I_CPY(uint8_t operand)
     setFlag(Z, Y == operand);
     setFlag(N, result & 0x80);
 }
+
+void CPU6502::I_DEC(uint16_t addr)
+{
+    uint8_t result = read(addr) - 1;
+    write(addr, result);
+
+    setFlag(Z, result == 0);
+    setFlag(N, result & 0x80);
+}
+
+void CPU6502::I_DEX()
+{
+    X--;
+
+    setFlag(Z, X == 0);
+    setFlag(N, X & 0x80);
+}
+
+void CPU6502::I_DEY()
+{
+    Y--;
+
+    setFlag(Z, Y == 0);
+    setFlag(N, Y & 0x80);
+}

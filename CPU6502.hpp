@@ -24,7 +24,7 @@ class CPU6502
         void I_CMP(uint8_t operand);  // Compare A
         void I_CPX(uint8_t operand);  // Compare X
         void I_CPY(uint8_t operand);  // Compare Y
-        void I_DEC();  // Decrement Memory
+        void I_DEC(uint16_t addr);  // Decrement Memory
         void I_DEX();  // Decrement X
         void I_DEY();  // Decrement Y
         void I_EOR();  // Bitwise Exclusive OR
@@ -180,6 +180,12 @@ class CPU6502
                     case 0xC0: I_CPY(immediate());       cycles = 2; break;
                     case 0xC4: I_CPY(read(zeroPage()));  cycles = 3; break;
                     case 0xCC: I_CPY(read(absolute()));  cycles = 4; break;
+                    case 0xC6: I_DEC(zeroPage());        cycles = 5; break;
+                    case 0xD6: I_DEC(zeroPageX());       cycles = 6; break;
+                    case 0xCE: I_DEC(absolute());        cycles = 6; break;
+                    case 0xDE: I_DEC(absoluteX());       cycles = 7; break;
+                    case 0xCA: I_DEX();                  cycles = 2; break;
+                    case 0x88: I_DEY();                  cycles = 2; break;
                     // ... all 256 opcodes
                     default: break;  // illegal opcodes
                 }
