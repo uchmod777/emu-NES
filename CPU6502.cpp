@@ -201,3 +201,34 @@ void CPU6502::I_BVS(int8_t offset)
         PC = target;
     }
 }
+
+void CPU6502::I_CLC()
+{
+    setFlag(C, false);
+}
+
+void CPU6502::I_CLD()
+{
+    setFlag(D, false);
+}
+
+void CPU6502::I_CLI()
+{
+    setFlag(I, false);
+}
+
+void CPU6502::I_CLV()
+{
+    setFlag(V, false);
+}
+
+void CPU6502::I_CMP(uint8_t operand)
+{
+    uint16_t result = (uint16_t)A - (uint16_t)operand;
+
+    setFlag(C, A >= operand);
+
+    setFlag(Z, A == operand);
+
+    setFlag(N, result & 0x80);
+}

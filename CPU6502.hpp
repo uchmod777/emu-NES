@@ -21,7 +21,7 @@ class CPU6502
         void I_CLD();  // Clear Decimal
         void I_CLI();  // Clear Interrupt Disable
         void I_CLV();  // Clear Overflow
-        void I_CMP();  // Compare A
+        void I_CMP(uint8_t operand);  // Compare A
         void I_CPX();  // Compare X
         void I_CPY();  // Compare Y
         void I_DEC();  // Decrement Memory
@@ -162,6 +162,18 @@ class CPU6502
                     case 0x00: I_BRK();                  cycles = 7; break;
                     case 0x50: I_BVC((int8_t)fetch());   cycles = 2; break;
                     case 0x70: I_BVS((int8_t)fetch());   cycles = 2; break;
+                    case 0x18: I_CLC();                  cycles = 2; break;
+                    case 0xD8: I_CLD();                  cycles = 2; break;
+                    case 0x58: I_CLI();                  cycles = 2; break;
+                    case 0xB8: I_CLV();                  cycles = 2; break;
+                    case 0xC9: I_CMP(immediate());       cycles = 2; break;
+                    case 0xC5: I_CMP(read(zeroPage()));  cycles = 3; break;
+                    case 0xD5: I_CMP(read(zeroPageX())); cycles = 4; break;
+                    case 0xCD: I_CMP(read(absolute()));  cycles = 4; break;
+                    case 0xDD: I_CMP(read(absoluteX())); cycles = 4; break;
+                    case 0xD9: I_CMP(read(absoluteY())); cycles = 4; break;
+                    case 0xC1: I_CMP(read(indirectX())); cycles = 6; break;
+                    case 0xD1: I_CMP(read(indirectY())); cycles = 5; break;
                     // ... all 256 opcodes
                     default: break;  // illegal opcodes
                 }
