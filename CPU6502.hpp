@@ -22,8 +22,8 @@ class CPU6502
         void I_CLI();  // Clear Interrupt Disable
         void I_CLV();  // Clear Overflow
         void I_CMP(uint8_t operand);  // Compare A
-        void I_CPX();  // Compare X
-        void I_CPY();  // Compare Y
+        void I_CPX(uint8_t operand);  // Compare X
+        void I_CPY(uint8_t operand);  // Compare Y
         void I_DEC();  // Decrement Memory
         void I_DEX();  // Decrement X
         void I_DEY();  // Decrement Y
@@ -174,6 +174,12 @@ class CPU6502
                     case 0xD9: I_CMP(read(absoluteY())); cycles = 4; break;
                     case 0xC1: I_CMP(read(indirectX())); cycles = 6; break;
                     case 0xD1: I_CMP(read(indirectY())); cycles = 5; break;
+                    case 0xE0: I_CPX(immediate());       cycles = 2; break;
+                    case 0xE4: I_CPX(read(zeroPage()));  cycles = 3; break;
+                    case 0xEC: I_CPX(read(absolute()));  cycles = 4; break;
+                    case 0xC0: I_CPY(immediate());       cycles = 2; break;
+                    case 0xC4: I_CPY(read(zeroPage()));  cycles = 3; break;
+                    case 0xCC: I_CPY(read(absolute()));  cycles = 4; break;
                     // ... all 256 opcodes
                     default: break;  // illegal opcodes
                 }

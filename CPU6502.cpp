@@ -232,3 +232,21 @@ void CPU6502::I_CMP(uint8_t operand)
 
     setFlag(N, result & 0x80);
 }
+
+void CPU6502::I_CPX(uint8_t operand)
+{
+    uint16_t result = (uint16_t)X - (uint16_t)operand;
+
+    setFlag(C, X >= operand);
+    setFlag(Z, X == operand);
+    setFlag(N, result & 0x80);
+}
+
+void CPU6502::I_CPY(uint8_t operand)
+{
+    uint16_t result = (uint16_t)Y - (uint16_t)operand;
+
+    setFlag(C, Y >= operand);
+    setFlag(Z, Y == operand);
+    setFlag(N, result & 0x80);
+}
