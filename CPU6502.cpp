@@ -275,3 +275,20 @@ void CPU6502::I_DEY()
     setFlag(Z, Y == 0);
     setFlag(N, Y & 0x80);
 }
+
+void CPU6502::I_EOR(uint8_t operand)
+{
+    A = A ^ operand;
+
+    setFlag(Z, A == 0);
+    setFlag(N, A & 0x80);
+}
+
+void CPU6502::I_INC(uint16_t addr)
+{
+    uint8_t result = read(addr) + 1;
+    write(addr, result);
+
+    setFlag(Z, result == 0);
+    setFlag(N, result & 0x80);
+}

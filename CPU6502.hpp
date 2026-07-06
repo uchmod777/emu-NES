@@ -27,8 +27,8 @@ class CPU6502
         void I_DEC(uint16_t addr);  // Decrement Memory
         void I_DEX();  // Decrement X
         void I_DEY();  // Decrement Y
-        void I_EOR();  // Bitwise Exclusive OR
-        void I_INC();  // Increment Memory
+        void I_EOR(uint8_t operand);  // Bitwise Exclusive OR
+        void I_INC(uint16_t addr);  // Increment Memory
         void I_INX();  // Increment X
         void I_INY();  // Increment Y
         void I_JMP();  // Jump
@@ -186,6 +186,18 @@ class CPU6502
                     case 0xDE: I_DEC(absoluteX());       cycles = 7; break;
                     case 0xCA: I_DEX();                  cycles = 2; break;
                     case 0x88: I_DEY();                  cycles = 2; break;
+                    case 0x49: I_EOR(immediate());       cycles = 2; break;
+                    case 0x45: I_EOR(read(zeroPage()));  cycles = 3; break;
+                    case 0x55: I_EOR(read(zeroPageX())); cycles = 4; break;
+                    case 0x4D: I_EOR(read(absolute()));  cycles = 4; break;
+                    case 0x5D: I_EOR(read(absoluteX())); cycles = 4; break;
+                    case 0x59: I_EOR(read(absoluteY())); cycles = 4; break;
+                    case 0x41: I_EOR(read(indirectX())); cycles = 6; break;
+                    case 0x51: I_EOR(read(indirectY())); cycles = 5; break;
+                    case 0xE6: I_INC(zeroPage());  cycles = 5; break;
+                    case 0xF6: I_INC(zeroPageX()); cycles = 6; break;
+                    case 0xEE: I_INC(absolute());  cycles = 6; break;
+                    case 0xFE: I_INC(absoluteX()); cycles = 7; break;
                     // ... all 256 opcodes
                     default: break;  // illegal opcodes
                 }
