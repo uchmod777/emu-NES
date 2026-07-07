@@ -32,10 +32,10 @@ class CPU6502
         void I_INX();  // Increment X
         void I_INY();  // Increment Y
         void I_JMP(uint16_t addr);  // Jump
-        void I_JSR();  // Jump to Subroutine
-        void I_LDA();  // Load A
-        void I_LDX();  // Load X
-        void I_LDY();  // Load Y
+        void I_JSR(uint16_t addr);  // Jump to Subroutine
+        void I_LDA(uint8_t operand);  // Load A
+        void I_LDX(uint8_t operand);  // Load X
+        void I_LDY(uint8_t operand);  // Load Y
         void I_LSR();  // Logical Shift Right
         void I_NOP();  // No Operation
         void I_ORA();  // Bitwise OR
@@ -212,6 +212,25 @@ class CPU6502
                     case 0xC8: I_INY();            cycles = 2; break;
                     case 0x4C: I_JMP(absolute());  cycles = 3; break;
                     case 0x6C: I_JMP(indirect());  cycles = 5; break;
+                    case 0x20: I_JSR(absolute());  cycles = 6; break;
+                    case 0xA9: I_LDA(immediate()); cycles = 2; break;
+                    case 0xA5: I_LDA(read(zeroPage())); cycles = 3; break;
+                    case 0xB5: I_LDA(read(zeroPageX())); cycles = 4; break;
+                    case 0xAD: I_LDA(read(absolute()));  cycles = 4; break;
+                    case 0xBD: I_LDA(read(absoluteX())); cycles = 4; break;
+                    case 0xB9: I_LDA(read(absoluteY())); cycles = 4; break;
+                    case 0xA1: I_LDA(read(indirectX())); cycles = 6; break;
+                    case 0xB1: I_LDA(read(indirectY())); cycles = 5; break;
+                    case 0xA2: I_LDX(immediate());       cycles = 2; break;
+                    case 0xA6: I_LDX(read(zeroPage()));  cycles = 3; break;
+                    case 0xB6: I_LDX(read(zeroPageY())); cycles = 4; break;
+                    case 0xAE: I_LDX(read(absolute()));  cycles = 4; break;
+                    case 0xBE: I_LDX(read(absoluteY())); cycles = 4; break;
+                    case 0xA0: I_LDY(immediate());       cycles = 2; break;
+                    case 0xA4: I_LDY(read(zeroPage()));  cycles = 3; break;
+                    case 0xB4: I_LDY(read(zeroPageX())); cycles = 4; break;
+                    case 0xAC: I_LDY(read(absolute()));  cycles = 4; break;
+                    case 0xBC: I_LDY(read(absoluteX())); cycles = 4; break;
                     // ... all 256 opcodes
                     default: break;  // illegal opcodes
                 }

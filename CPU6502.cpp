@@ -313,3 +313,36 @@ void CPU6502::I_JMP(uint16_t addr)
 {
     PC = addr;
 }
+
+void CPU6502::I_JSR(uint16_t addr)
+{
+    uint16_t ret = PC - 1;
+    push((ret >> 8) & 0xFF);
+    push(ret & 0xFF);
+    
+    PC = addr;
+}
+
+void CPU6502::I_LDA(uint8_t operand)
+{
+    A = operand;
+
+    setFlag(Z, A == 0);
+    setFlag(N, A & 0x80);
+}
+
+void CPU6502::I_LDX(uint8_t operand)
+{
+    X = operand;
+
+    setFlag(Z, X == 0);
+    setFlag(N, X & 0x80);
+}
+
+void CPU6502::I_LDY(uint8_t operand)
+{
+    Y = operand;
+
+    setFlag(Z, Y == 0);
+    setFlag(N, Y & 0x80);
+}
