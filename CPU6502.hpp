@@ -31,7 +31,7 @@ class CPU6502
         void I_INC(uint16_t addr);  // Increment Memory
         void I_INX();  // Increment X
         void I_INY();  // Increment Y
-        void I_JMP();  // Jump
+        void I_JMP(uint16_t addr);  // Jump
         void I_JSR();  // Jump to Subroutine
         void I_LDA();  // Load A
         void I_LDX();  // Load X
@@ -106,6 +106,16 @@ class CPU6502
                 cycles++;  // Page boundary penalty
             }
             return addr;
+        }
+        uint16_t indirect() {
+            uint16_t ptr = absolute();
+
+            if ((ptr & 0x00FF) == 0x00FF) 
+            {
+                return read(ptr) | (read(ptr & 0xFF00) << 8);
+            }
+
+            return read(ptr) | (read(ptr + 1) << 8);
         }
         uint16_t indirectX()  { uint8_t base = (fetch() + X) & 0xFF;
                                 return read(base) | (read((base+1) & 0xFF) << 8); }
@@ -198,6 +208,10 @@ class CPU6502
                     case 0xF6: I_INC(zeroPageX()); cycles = 6; break;
                     case 0xEE: I_INC(absolute());  cycles = 6; break;
                     case 0xFE: I_INC(absoluteX()); cycles = 7; break;
+                    case 0xE8: I_INX();            cycles = 2; break;
+                    case 0xC8: I_INY();            cycles = 2; break;
+                    case 0x4C: I_JMP(absolute());  cycles = 3; break;
+                    case 0x6C: I_JMP(indirect());  cycles = 5; break;
                     // ... all 256 opcodes
                     default: break;  // illegal opcodes
                 }

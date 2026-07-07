@@ -292,3 +292,24 @@ void CPU6502::I_INC(uint16_t addr)
     setFlag(Z, result == 0);
     setFlag(N, result & 0x80);
 }
+
+void CPU6502::I_INX()
+{
+    X = X + 1;
+
+    setFlag(Z, X == 0);
+    setFlag(N, X & 0x80);
+}
+
+void CPU6502::I_INY()
+{
+    Y = Y + 1;
+
+    setFlag(Z, Y == 0);
+    setFlag(N, Y & 0x80);
+}
+
+void CPU6502::I_JMP(uint16_t addr)
+{
+    PC = addr;
+}
