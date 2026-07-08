@@ -368,3 +368,26 @@ void CPU6502::I_LSR_ACC()
     setFlag(Z, A == 0);
     setFlag(N, false);
 }
+
+void CPU6502::I_NOP()
+{
+
+}
+
+void CPU6502::I_ORA(uint8_t operand)
+{
+    A = A | operand;
+
+    setFlag(Z, A == 0);
+    setFlag(N, A & 0x80);
+}
+
+void CPU6502::I_PHA()
+{
+    push(A);
+}
+
+void CPU6502::I_PHP()
+{
+    push(P | 0x30);
+}

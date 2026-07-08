@@ -39,7 +39,7 @@ class CPU6502
         void I_LSR(uint16_t addr);  // Logical Shift Right
         void I_LSR_ACC();  // Logical Shift Right Accumulator
         void I_NOP();  // No Operation
-        void I_ORA();  // Bitwise OR
+        void I_ORA(uint8_t operand);  // Bitwise OR
         void I_PHA();  // Push A
         void I_PHP();  // Push Processor Status
         void I_PLA();  // Pull A
@@ -237,6 +237,17 @@ class CPU6502
                     case 0x56: I_LSR(zeroPageX());       cycles = 6; break;
                     case 0x4E: I_LSR(absolute());        cycles = 6; break;
                     case 0x5E: I_LSR(absoluteX());       cycles = 7; break;
+                    case 0xEA: I_NOP();                  cycles = 2; break;
+                    case 0x09: I_ORA(immediate());       cycles = 2; break;
+                    case 0x05: I_ORA(read(zeroPage()));  cycles = 3; break;
+                    case 0x15: I_ORA(read(zeroPageX())); cycles = 4; break;
+                    case 0x0D: I_ORA(read(absolute()));  cycles = 4; break;
+                    case 0x1D: I_ORA(read(absoluteX())); cycles = 4; break;
+                    case 0x19: I_ORA(read(absoluteY())); cycles = 4; break;
+                    case 0x01: I_ORA(read(indirectX())); cycles = 6; break;
+                    case 0x11: I_ORA(read(indirectY())); cycles = 5; break;
+                    case 0x48: I_PHA();                  cycles = 3; break;
+                    case 0x08: I_PHP();                  cycles = 3; break;
                     // ... all 256 opcodes
                     default: break;  // illegal opcodes
                 }
