@@ -346,3 +346,25 @@ void CPU6502::I_LDY(uint8_t operand)
     setFlag(Z, Y == 0);
     setFlag(N, Y & 0x80);
 }
+
+void CPU6502::I_LSR(uint16_t addr)
+{
+    uint8_t operand = read(addr);
+
+    setFlag(C, operand & 0x01);
+    
+    operand >>= 1;
+    write(addr, operand);
+
+    setFlag(Z, operand == 0);
+    setFlag(N, false);
+}
+
+void CPU6502::I_LSR_ACC()
+{
+    setFlag(C, A & 0x01);
+    A >>= 1;
+
+    setFlag(Z, A == 0);
+    setFlag(N, false);
+}

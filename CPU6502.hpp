@@ -36,7 +36,8 @@ class CPU6502
         void I_LDA(uint8_t operand);  // Load A
         void I_LDX(uint8_t operand);  // Load X
         void I_LDY(uint8_t operand);  // Load Y
-        void I_LSR();  // Logical Shift Right
+        void I_LSR(uint16_t addr);  // Logical Shift Right
+        void I_LSR_ACC();  // Logical Shift Right Accumulator
         void I_NOP();  // No Operation
         void I_ORA();  // Bitwise OR
         void I_PHA();  // Push A
@@ -231,6 +232,11 @@ class CPU6502
                     case 0xB4: I_LDY(read(zeroPageX())); cycles = 4; break;
                     case 0xAC: I_LDY(read(absolute()));  cycles = 4; break;
                     case 0xBC: I_LDY(read(absoluteX())); cycles = 4; break;
+                    case 0x4A: I_LSR_ACC();              cycles = 2; break;
+                    case 0x46: I_LSR(zeroPage());        cycles = 5; break;
+                    case 0x56: I_LSR(zeroPageX());       cycles = 6; break;
+                    case 0x4E: I_LSR(absolute());        cycles = 6; break;
+                    case 0x5E: I_LSR(absoluteX());       cycles = 7; break;
                     // ... all 256 opcodes
                     default: break;  // illegal opcodes
                 }
