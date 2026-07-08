@@ -248,6 +248,8 @@ class CPU6502
                     case 0x11: I_ORA(read(indirectY())); cycles = 5; break;
                     case 0x48: I_PHA();                  cycles = 3; break;
                     case 0x08: I_PHP();                  cycles = 3; break;
+                    case 0x68: I_PLA();                  cycles = 4; break;
+                    case 0x28: I_PLP();                  cycles = 4; break;
                     // ... all 256 opcodes
                     default: break;  // illegal opcodes
                 }

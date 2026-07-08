@@ -391,3 +391,16 @@ void CPU6502::I_PHP()
 {
     push(P | 0x30);
 }
+
+void CPU6502::I_PLA()
+{
+    A = pop();
+
+    setFlag(Z, A == 0);
+    setFlag(N, A & 0x80);
+}
+
+void CPU6502::I_PLP()
+{
+    P = pop() & 0xCF;
+}
