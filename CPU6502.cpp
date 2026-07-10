@@ -404,3 +404,47 @@ void CPU6502::I_PLP()
 {
     P = pop() & 0xCF;
 }
+
+void CPU6502::I_ROL_ACC()
+{
+    uint8_t oldCarry = getFlag(C);
+    setFlag(C, A & 0x80);
+    A <<= 1;
+    A = A | oldCarry;
+    setFlag(Z, A == 0);
+    setFlag(N, A & 0x80);
+}
+
+void CPU6502::I_ROL(uint16_t addr)
+{
+    uint8_t operand = read(addr);
+    uint8_t oldCarry = getFlag(C);
+    setFlag(C, operand & 0x80);
+    operand <<= 1;
+    operand |= oldCarry;
+    write(addr, operand);
+    setFlag(Z, operand == 0);
+    setFlag(N, operand & 0x80);
+}
+
+void CPU6502::I_ROR_ACC()
+{
+    uint8_t oldCarry = getFlag(C);
+    setFlag(C, A & 0x01);
+    A >>= 1;
+    A |= (oldCarry << 7);  // shift into bit position 7
+    setFlag(Z, A == 0);
+    setFlag(N, A & 0x80);
+}
+
+void CPU6502::I_ROR(uint16_t addr)
+{
+    uint8_t operand = read(addr);
+    uint8_t oldCarry = getFlag(C);
+    setFlag(C, operand & 0x01);  // 0-bit moves into carry
+    operand >>= 1;
+    operand |= (oldCarry << 7);
+    write(addr, operand);
+    setFlag(Z, operand == 0);
+    setFlag(N, operand & 0x80);
+}

@@ -44,8 +44,10 @@ class CPU6502
         void I_PHP();  // Push Processor Status
         void I_PLA();  // Pull A
         void I_PLP();  // Pull Processor Status
-        void I_ROL();  // Rotate Left
-        void I_ROR();  // Rotate Right
+        void I_ROL(uint16_t addr);  // Rotate Left
+        void I_ROL_ACC();  // Rotate left accumulator
+        void I_ROR(uint16_t addr);  // Rotate Right
+        void I_ROR_ACC();  // Rotate right accumulator
         void I_RTI();  // Return from Interrupt
         void I_RTS();  // Return from Subroutine
         void I_SBC();  // Subtract with Carry
@@ -250,6 +252,16 @@ class CPU6502
                     case 0x08: I_PHP();                  cycles = 3; break;
                     case 0x68: I_PLA();                  cycles = 4; break;
                     case 0x28: I_PLP();                  cycles = 4; break;
+                    case 0x2A: I_ROL_ACC();              cycles = 2; break;
+                    case 0x26: I_ROL(zeroPage());        cycles = 5; break;
+                    case 0x36: I_ROL(zeroPageX());       cycles = 6; break;
+                    case 0x2E: I_ROL(absolute());        cycles = 6; break;
+                    case 0x3E: I_ROL(absoluteX());       cycles = 7; break;
+                    case 0x6A: I_ROR_ACC();              cycles = 2; break;
+                    case 0x66: I_ROR(zeroPage());        cycles = 5; break;
+                    case 0x76: I_ROR(zeroPageX());       cycles = 6; break;
+                    case 0x6E: I_ROR(absolute());        cycles = 6; break;
+                    case 0x7E: I_ROR(absoluteX());       cycles = 7; break;
                     // ... all 256 opcodes
                     default: break;  // illegal opcodes
                 }
