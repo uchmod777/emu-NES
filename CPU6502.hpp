@@ -55,8 +55,8 @@ class CPU6502
         void I_SED();  // Set Decimal
         void I_SEI();  // Set Interrupt Disable
         void I_STA(uint16_t addr);  // Store A
-        void I_STX();  // Store X
-        void I_STY();  // Store Y
+        void I_STX(uint16_t addr);  // Store X
+        void I_STY(uint16_t addr);  // Store Y
         void I_TAX();  // Transfer A to X
         void I_TAY();  // Tranfter A to Y
         void I_TSX();  // Transfer Stack Pointer to X
@@ -282,6 +282,12 @@ class CPU6502
                     case 0x99: I_STA(absoluteY());       cycles = 5; break;
                     case 0x81: I_STA(indirectX());       cycles = 6; break;
                     case 0x91: I_STA(indirectY());       cycles = 6; break;
+                    case 0x86: I_STX(zeroPage());        cycles = 3; break;
+                    case 0x96: I_STX(zeroPageY());       cycles = 4; break;
+                    case 0x8E: I_STX(absolute());        cycles = 4; break;
+                    case 0x84: I_STY(zeroPage());        cycles = 3; break;
+                    case 0x94: I_STY(zeroPageX());       cycles = 4; break;
+                    case 0x8C: I_STY(absolute());        cycles = 4; break;
                     // ... all 256 opcodes
                     default: break;  // illegal opcodes
                 }

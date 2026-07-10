@@ -493,3 +493,13 @@ void CPU6502::I_STA(uint16_t addr)
 {
     write(addr, A);
 }
+
+void CPU6502::I_STX(uint16_t addr)
+{
+    write(addr, X);
+}
+
+void CPU6502::I_STY(uint16_t addr)
+{
+    write(addr, Y);
+}
