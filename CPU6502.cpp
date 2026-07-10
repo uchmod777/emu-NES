@@ -448,3 +448,48 @@ void CPU6502::I_ROR(uint16_t addr)
     setFlag(Z, operand == 0);
     setFlag(N, operand & 0x80);
 }
+
+void CPU6502::I_RTI()
+{
+    P = pop() & 0xCF;
+    uint8_t lowByte = pop();
+    uint8_t highByte = pop();
+    PC = (highByte << 8) | lowByte;
+}
+
+void CPU6502::I_RTS()
+{
+    uint8_t lowByte = pop();
+    uint8_t highByte = pop();
+    PC = ((highByte << 8) | lowByte) + 1;
+}
+
+void CPU6502::I_SBC(uint8_t operand)
+{
+    uint8_t result = (uint16_t)A - (uint16_t)operand - (1 - getFlag(C));
+    setFlag(C, result < 0x100);
+    setFlag(Z, (result & 0xFF) == 0);
+    setFlag(V, (result ^ A) & (result ^ ~operand) & 0x80);
+    setFlag(N, result & 0x80);
+    A = result & 0xFF;
+}
+
+void CPU6502::I_SEC()
+{
+    setFlag(C, true);
+}
+
+void CPU6502::I_SED()
+{
+    setFlag(D, true);
+}
+
+void CPU6502::I_SEI()
+{
+    setFlag(I, true);
+}
+
+void CPU6502::I_STA(uint16_t addr)
+{
+    write(addr, A);
+}

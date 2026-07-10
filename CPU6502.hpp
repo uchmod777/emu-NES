@@ -50,11 +50,11 @@ class CPU6502
         void I_ROR_ACC();  // Rotate right accumulator
         void I_RTI();  // Return from Interrupt
         void I_RTS();  // Return from Subroutine
-        void I_SBC();  // Subtract with Carry
+        void I_SBC(uint8_t operand);  // Subtract with Carry
         void I_SEC();  // Set Carry
         void I_SED();  // Set Decimal
         void I_SEI();  // Set Interrupt Disable
-        void I_STA();  // Store A
+        void I_STA(uint16_t addr);  // Store A
         void I_STX();  // Store X
         void I_STY();  // Store Y
         void I_TAX();  // Transfer A to X
@@ -262,6 +262,26 @@ class CPU6502
                     case 0x76: I_ROR(zeroPageX());       cycles = 6; break;
                     case 0x6E: I_ROR(absolute());        cycles = 6; break;
                     case 0x7E: I_ROR(absoluteX());       cycles = 7; break;
+                    case 0x40: I_RTI();                  cycles = 6; break;
+                    case 0x60: I_RTS();                  cycles = 6; break;
+                    case 0xE9: I_SBC(immediate());       cycles = 2; break;
+                    case 0xE5: I_SBC(read(zeroPage()));  cycles = 3; break;
+                    case 0xF5: I_SBC(read(zeroPageX())); cycles = 4; break;
+                    case 0xED: I_SBC(read(absolute()));  cycles = 4; break;
+                    case 0xFD: I_SBC(read(absoluteX())); cycles = 4; break;
+                    case 0xF9: I_SBC(read(absoluteY())); cycles = 4; break;
+                    case 0xE1: I_SBC(read(indirectX())); cycles = 6; break;
+                    case 0xF1: I_SBC(read(indirectY())); cycles = 5; break;
+                    case 0x38: I_SEC();                  cycles = 2; break;
+                    case 0xF8: I_SED();                  cycles = 2; break;
+                    case 0x78: I_SEI();                  cycles = 2; break;
+                    case 0x85: I_STA(zeroPage());        cycles = 3; break;
+                    case 0x95: I_STA(zeroPageX());       cycles = 4; break;
+                    case 0x8D: I_STA(absolute());        cycles = 4; break;
+                    case 0x9D: I_STA(absoluteX());       cycles = 5; break;
+                    case 0x99: I_STA(absoluteY());       cycles = 5; break;
+                    case 0x81: I_STA(indirectX());       cycles = 6; break;
+                    case 0x91: I_STA(indirectY());       cycles = 6; break;
                     // ... all 256 opcodes
                     default: break;  // illegal opcodes
                 }
