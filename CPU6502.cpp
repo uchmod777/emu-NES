@@ -1,5 +1,41 @@
 #include "CPU6502.hpp"
 
+void CPU6502::LoadMemory(uint16_t addr, uint8_t data)
+{
+    write(addr, data);
+}
+
+void CPU6502::LogCPU(std::ofstream& logFile, uint64_t totalCycles)
+{
+    uint8_t opcode = memory[PC];
+    uint8_t len    = instructionSizes[opcode];
+
+    // Build raw bytes string dynamically based on length
+    char bytes[9] = {0};
+    if (len == 1)
+    {
+        snprintf(bytes, sizeof(bytes), "%02X      ", opcode);
+    } else if (len == 2)
+    {
+        snprintf(bytes, sizeof(bytes), "%02X %02X   ", opcode, memory[PC+1]);
+    } else if (len == 3)
+    {
+        snprintf(bytes, sizeof(bytes), "%02X %02X %02X", opcode, memory[PC+1], memory[PC+2]);
+    }
+
+    logFile << std::uppercase << std::hex << std::setfill('0')
+            << std::setw(4) << PC << "  "
+            << bytes << "  "
+            << "A:"  << std::setw(2) << (int)A
+            << " X:" << std::setw(2) << (int)X
+            << " Y:" << std::setw(2) << (int)Y
+            << " P:" << std::setw(2) << (int)P
+            << " SP:" << std::setw(2) << (int)SP
+            << " CYC:" << std::dec << totalCycles
+            << "\n";
+
+}
+
 void CPU6502::Reset()
 {
     A = 0;

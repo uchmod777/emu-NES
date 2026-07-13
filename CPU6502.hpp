@@ -1,11 +1,17 @@
 #include <cstdint>
+#include <iostream>
+#include <fstream>
+#include <iomanip>
 
 class CPU6502 
 {
     public:
+        void setPC(uint16_t addr) { PC = addr; }
         void NMI();
         void IRQ();
         void Reset();
+        void LoadMemory(uint16_t addr, uint8_t data);
+        void LogCPU(std::ofstream& logFile, uint64_t totalCycles);
         void clock(); // CPU Fetch, Decode, Execute
         void I_ADC(uint8_t operand);  // Add with Carry
         void I_AND(uint8_t operand);   // Bitwise AND
@@ -68,7 +74,7 @@ class CPU6502
         void I_TXS();  // Transfer X to Stack Pointer
         void I_TYA();  // Transfer Y to A
     private:
-        // Components
+        // Registers and Cycles
         uint8_t  A;       // Accumulator
         uint8_t  X;       // Index X
         uint8_t  Y;       // Index Y
@@ -77,8 +83,30 @@ class CPU6502
         uint8_t  P;       // Status Flags: N V - B D I Z C
         uint8_t  cycles;  // Remaining cycles for current instruction
 
+        // Opcode lookup table
+        // Instruction lengths indexed by opcode
+        inline static const uint8_t instructionSizes[256] = {
+          //0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+            1, 2, 1, 2, 2, 2, 2, 2, 1, 2, 1, 2, 3, 3, 3, 3,  // 0x00
+            2, 2, 1, 2, 2, 2, 2, 2, 1, 3, 1, 3, 3, 3, 3, 3,  // 0x10
+            3, 2, 1, 2, 2, 2, 2, 2, 1, 2, 1, 2, 3, 3, 3, 3,  // 0x20
+            2, 2, 1, 2, 2, 2, 2, 2, 1, 3, 1, 3, 3, 3, 3, 3,  // 0x30
+            1, 2, 1, 2, 2, 2, 2, 2, 1, 2, 1, 2, 3, 3, 3, 3,  // 0x40
+            2, 2, 1, 2, 2, 2, 2, 2, 1, 3, 1, 3, 3, 3, 3, 3,  // 0x50
+            1, 2, 1, 2, 2, 2, 2, 2, 1, 2, 1, 2, 3, 3, 3, 3,  // 0x60
+            2, 2, 1, 2, 2, 2, 2, 2, 1, 3, 1, 3, 3, 3, 3, 3,  // 0x70
+            2, 2, 2, 2, 2, 2, 2, 2, 1, 2, 1, 2, 3, 3, 3, 3,  // 0x80
+            2, 2, 1, 2, 2, 2, 2, 2, 1, 3, 1, 3, 3, 3, 3, 3,  // 0x90
+            2, 2, 2, 2, 2, 2, 2, 2, 1, 2, 1, 2, 3, 3, 3, 3,  // 0xA0
+            2, 2, 1, 2, 2, 2, 2, 2, 1, 3, 1, 3, 3, 3, 3, 3,  // 0xB0
+            2, 2, 2, 2, 2, 2, 2, 2, 1, 2, 1, 2, 3, 3, 3, 3,  // 0xC0
+            2, 2, 1, 2, 2, 2, 2, 2, 1, 3, 1, 3, 3, 3, 3, 3,  // 0xD0
+            2, 2, 2, 2, 2, 2, 2, 2, 1, 2, 1, 2, 3, 3, 3, 3,  // 0xE0
+            2, 2, 1, 2, 2, 2, 2, 2, 1, 3, 1, 3, 3, 3, 3, 3,  // 0xF0
+        };
+
         // Memory
-        uint8_t  memory[65536];
+        uint8_t  memory[65536];  // 64 KB
         uint8_t  read(uint16_t addr)                { return memory[addr]; }
         void     write(uint16_t addr, uint8_t data) { memory[addr] = data; }
         uint8_t  fetch()                            { return read(PC++); }
