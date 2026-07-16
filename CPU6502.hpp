@@ -1,3 +1,5 @@
+#pragma once
+
 #include <cstdint>
 #include <iostream>
 #include <fstream>
@@ -7,12 +9,13 @@ class CPU6502
 {
     public:
         void setPC(uint16_t addr) { PC = addr; }
+        uint8_t getCycles() { return cycles; }
         void NMI();
         void IRQ();
         void Reset();
         void LoadMemory(uint16_t addr, uint8_t data);
         void LogCPU(std::ofstream& logFile, uint64_t totalCycles);
-        void clock(); // CPU Fetch, Decode, Execute
+        void clock(std::ofstream& logFile); // CPU Fetch, Decode, Execute
         void I_ADC(uint8_t operand);  // Add with Carry
         void I_AND(uint8_t operand);   // Bitwise AND
         void I_ASL_ACC();  // Arithmetic Shift Left, Accumulator
@@ -105,6 +108,9 @@ class CPU6502
             2, 2, 1, 2, 2, 2, 2, 2, 1, 3, 1, 3, 3, 3, 3, 3,  // 0xF0
         };
 
+        // Logging
+        uint64_t totalCycles = 0;
+
         // Memory
         uint8_t  memory[65536];  // 64 KB
         uint8_t  read(uint16_t addr)                { return memory[addr]; }
@@ -121,7 +127,12 @@ class CPU6502
         uint16_t zeroPage()   { return fetch(); }
         uint16_t zeroPageX()  { return (fetch() + X) & 0xFF; }
         uint16_t zeroPageY()  { return (fetch() + Y) & 0xFF; }
-        uint16_t absolute()   { uint16_t lo = fetch(); return lo | (fetch() << 8); }
+        uint16_t absolute()
+        {
+            uint8_t low = fetch();
+            uint8_t high = fetch();
+            return (uint16_t) (high << 8) | low;
+        }
         uint16_t absoluteX() 
         {
             uint16_t base = absolute();
@@ -132,6 +143,12 @@ class CPU6502
             }
             return addr;
         }
+        uint16_t absoluteX_write()
+        {
+            uint8_t low = fetch();
+            uint8_t high = fetch();
+            return ((uint16_t)(high << 8) | low) + X;
+        }
         uint16_t absoluteY()
         {
             uint16_t base = absolute();
@@ -141,6 +158,12 @@ class CPU6502
                 cycles++;  // Page boundary penalty
             }
             return addr;
+        }
+        uint16_t absoluteY_write()
+        {
+            uint8_t low = fetch();
+            uint8_t high = fetch();
+            return ((uint16_t)(high << 8) | low) + Y;
         }
         uint16_t indirect() {
             uint16_t ptr = absolute();
@@ -164,6 +187,12 @@ class CPU6502
                 cycles++;  // Page boundary penalty
             }
             return result;
+        }
+        uint16_t indirectY_write()
+        {
+            uint8_t base = fetch();
+            uint16_t addr = read(base) | (read((base + 1) & 0xFF) << 8);
+            return addr + Y;
         }
 
         // Stack

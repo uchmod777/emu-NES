@@ -10,13 +10,10 @@ int main()
     cpu.setPC(0xC000);
 
     std::ofstream logFile("cpulog.txt");
-    uint64_t totalCycles = 0;
 
-    for (int i = 0; i < 10000; i++)
+    for (int i = 0; i < 1000000; i++)
     {
-        cpu.LogCPU(logFile, totalCycles);
-        cpu.clock();
-        totalCycles++;
+        cpu.clock(logFile);
     }
 
     logFile.close();

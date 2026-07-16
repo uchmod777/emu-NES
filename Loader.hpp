@@ -1,3 +1,5 @@
+#pragma once
+
 #include "CPU6502.hpp"
 #include <fstream>
 

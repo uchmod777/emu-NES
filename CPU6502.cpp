@@ -1,4 +1,7 @@
 #include "CPU6502.hpp"
+#include <cstdio>
+#include <cerrno>
+#include <cstring>
 
 void CPU6502::LoadMemory(uint16_t addr, uint8_t data)
 {
@@ -33,7 +36,7 @@ void CPU6502::LogCPU(std::ofstream& logFile, uint64_t totalCycles)
             << " SP:" << std::setw(2) << (int)SP
             << " CYC:" << std::dec << totalCycles
             << "\n";
-
+    logFile.flush();
 }
 
 void CPU6502::Reset()
@@ -45,6 +48,7 @@ void CPU6502::Reset()
     P = 0x24;
     PC = read(0xFFFC) | (read(0xFFFD) << 8);
     cycles = 8;
+    totalCycles = 7;
 }
 
 void CPU6502::NMI()
@@ -470,7 +474,7 @@ void CPU6502::I_PLA()
 
 void CPU6502::I_PLP()
 {
-    P = pop() & 0xCF;
+    P = (pop() & 0xEF) | 0x20;
 }
 
 void CPU6502::I_ROL_ACC()
@@ -519,7 +523,7 @@ void CPU6502::I_ROR(uint16_t addr)
 
 void CPU6502::I_RTI()
 {
-    P = pop() & 0xCF;
+    P = (pop() & 0xEF) | 0x20;
     uint8_t lowByte = pop();
     uint8_t highByte = pop();
     PC = (highByte << 8) | lowByte;
@@ -612,43 +616,44 @@ void CPU6502::I_TYA()
     setFlag(N, A & 0x80);
 }
 
-void CPU6502::clock()
+void CPU6502::clock(std::ofstream& logFile)
 {
     if (cycles == 0) {
+        LogCPU(logFile, totalCycles);
         uint8_t opcode = fetch();
         switch (opcode) {
             case 0x69: I_ADC(immediate());       cycles = 2; break;
             case 0x65: I_ADC(read(zeroPage()));  cycles = 3; break;
             case 0x75: I_ADC(read(zeroPageX())); cycles = 4; break;
             case 0x6D: I_ADC(read(absolute()));  cycles = 4; break;
-            case 0x7D: I_ADC(read(absoluteX())); cycles = 4; break;
-            case 0x79: I_ADC(read(absoluteY())); cycles = 4; break;
+            case 0x7D: cycles = 4; I_ADC(read(absoluteX()));  break;
+            case 0x79: cycles = 4; I_ADC(read(absoluteY()));  break;
             case 0x61: I_ADC(read(indirectX())); cycles = 6; break;
-            case 0x71: I_ADC(read(indirectY())); cycles = 5; break;
+            case 0x71: cycles = 5; I_ADC(read(indirectY()));  break;
             case 0x29: I_AND(immediate());       cycles = 2; break;
             case 0x25: I_AND(read(zeroPage()));  cycles = 3; break;
             case 0x35: I_AND(read(zeroPageX())); cycles = 4; break;
             case 0x2D: I_AND(read(absolute()));  cycles = 4; break;
-            case 0x3D: I_AND(read(absoluteX())); cycles = 4; break;
-            case 0x39: I_AND(read(absoluteY())); cycles = 4; break;
+            case 0x3D: cycles = 4; I_AND(read(absoluteX()));  break;
+            case 0x39: cycles = 4; I_AND(read(absoluteY()));  break;
             case 0x21: I_AND(read(indirectX())); cycles = 6; break;
-            case 0x31: I_AND(read(indirectY())); cycles = 5; break;
+            case 0x31: cycles = 5; I_AND(read(indirectY()));  break;
             case 0x0A: I_ASL_ACC();              cycles = 2; break;
             case 0x06: I_ASL(zeroPage());        cycles = 5; break;
             case 0x16: I_ASL(zeroPageX());       cycles = 6; break;
             case 0x0E: I_ASL(absolute());        cycles = 6; break;
-            case 0x1E: I_ASL(absoluteX());       cycles = 7; break;
-            case 0x90: I_BCC((int8_t)fetch());   cycles = 2; break;
-            case 0xB0: I_BCS((int8_t)fetch());   cycles = 2; break;
-            case 0xF0: I_BEQ((int8_t)fetch());   cycles = 2; break;
+            case 0x1E: cycles = 7; I_ASL(absoluteX());        break;
+            case 0x90: cycles = 2; I_BCC((int8_t)fetch());    break;
+            case 0xB0: cycles = 2; I_BCS((int8_t)fetch());    break;
+            case 0xF0: cycles = 2; I_BEQ((int8_t)fetch());    break;
             case 0x24: I_BIT(read(zeroPage()));  cycles = 3; break;
             case 0x2C: I_BIT(read(absolute()));  cycles = 4; break;
-            case 0x30: I_BMI((int8_t)fetch());   cycles = 2; break;
-            case 0xD0: I_BNE((int8_t)fetch());   cycles = 2; break;
-            case 0x10: I_BPL((int8_t)fetch());   cycles = 2; break;
+            case 0x30: cycles = 2; I_BMI((int8_t)fetch());    break;
+            case 0xD0: cycles = 2; I_BNE((int8_t)fetch());    break;
+            case 0x10: cycles = 2; I_BPL((int8_t)fetch());    break;
             case 0x00: I_BRK();                  cycles = 7; break;
-            case 0x50: I_BVC((int8_t)fetch());   cycles = 2; break;
-            case 0x70: I_BVS((int8_t)fetch());   cycles = 2; break;
+            case 0x50: cycles = 2; I_BVC((int8_t)fetch());    break;
+            case 0x70: cycles = 2; I_BVS((int8_t)fetch());    break;
             case 0x18: I_CLC();                  cycles = 2; break;
             case 0xD8: I_CLD();                  cycles = 2; break;
             case 0x58: I_CLI();                  cycles = 2; break;
@@ -657,10 +662,10 @@ void CPU6502::clock()
             case 0xC5: I_CMP(read(zeroPage()));  cycles = 3; break;
             case 0xD5: I_CMP(read(zeroPageX())); cycles = 4; break;
             case 0xCD: I_CMP(read(absolute()));  cycles = 4; break;
-            case 0xDD: I_CMP(read(absoluteX())); cycles = 4; break;
-            case 0xD9: I_CMP(read(absoluteY())); cycles = 4; break;
+            case 0xDD: cycles = 4; I_CMP(read(absoluteX()));  break;
+            case 0xD9: cycles = 4; I_CMP(read(absoluteY()));  break;
             case 0xC1: I_CMP(read(indirectX())); cycles = 6; break;
-            case 0xD1: I_CMP(read(indirectY())); cycles = 5; break;
+            case 0xD1: cycles = 5; I_CMP(read(indirectY()));  break;
             case 0xE0: I_CPX(immediate());       cycles = 2; break;
             case 0xE4: I_CPX(read(zeroPage()));  cycles = 3; break;
             case 0xEC: I_CPX(read(absolute()));  cycles = 4; break;
@@ -670,21 +675,21 @@ void CPU6502::clock()
             case 0xC6: I_DEC(zeroPage());        cycles = 5; break;
             case 0xD6: I_DEC(zeroPageX());       cycles = 6; break;
             case 0xCE: I_DEC(absolute());        cycles = 6; break;
-            case 0xDE: I_DEC(absoluteX());       cycles = 7; break;
+            case 0xDE: cycles = 7; I_DEC(absoluteX());        break;
             case 0xCA: I_DEX();                  cycles = 2; break;
             case 0x88: I_DEY();                  cycles = 2; break;
             case 0x49: I_EOR(immediate());       cycles = 2; break;
             case 0x45: I_EOR(read(zeroPage()));  cycles = 3; break;
             case 0x55: I_EOR(read(zeroPageX())); cycles = 4; break;
             case 0x4D: I_EOR(read(absolute()));  cycles = 4; break;
-            case 0x5D: I_EOR(read(absoluteX())); cycles = 4; break;
-            case 0x59: I_EOR(read(absoluteY())); cycles = 4; break;
+            case 0x5D: cycles = 4; I_EOR(read(absoluteX()));  break;
+            case 0x59: cycles = 4; I_EOR(read(absoluteY()));  break;
             case 0x41: I_EOR(read(indirectX())); cycles = 6; break;
-            case 0x51: I_EOR(read(indirectY())); cycles = 5; break;
+            case 0x51: cycles = 5; I_EOR(read(indirectY()));  break;
             case 0xE6: I_INC(zeroPage());        cycles = 5; break;
             case 0xF6: I_INC(zeroPageX());       cycles = 6; break;
             case 0xEE: I_INC(absolute());        cycles = 6; break;
-            case 0xFE: I_INC(absoluteX());       cycles = 7; break;
+            case 0xFE: cycles = 7; I_INC(absoluteX());        break;
             case 0xE8: I_INX();                  cycles = 2; break;
             case 0xC8: I_INY();                  cycles = 2; break;
             case 0x4C: I_JMP(absolute());        cycles = 3; break;
@@ -694,34 +699,34 @@ void CPU6502::clock()
             case 0xA5: I_LDA(read(zeroPage()));  cycles = 3; break;
             case 0xB5: I_LDA(read(zeroPageX())); cycles = 4; break;
             case 0xAD: I_LDA(read(absolute()));  cycles = 4; break;
-            case 0xBD: I_LDA(read(absoluteX())); cycles = 4; break;
-            case 0xB9: I_LDA(read(absoluteY())); cycles = 4; break;
+            case 0xBD: cycles = 4; I_LDA(read(absoluteX()));  break;
+            case 0xB9: cycles = 4; I_LDA(read(absoluteY()));  break;
             case 0xA1: I_LDA(read(indirectX())); cycles = 6; break;
-            case 0xB1: I_LDA(read(indirectY())); cycles = 5; break;
+            case 0xB1: cycles = 5; I_LDA(read(indirectY()));  break;
             case 0xA2: I_LDX(immediate());       cycles = 2; break;
             case 0xA6: I_LDX(read(zeroPage()));  cycles = 3; break;
             case 0xB6: I_LDX(read(zeroPageY())); cycles = 4; break;
             case 0xAE: I_LDX(read(absolute()));  cycles = 4; break;
-            case 0xBE: I_LDX(read(absoluteY())); cycles = 4; break;
+            case 0xBE: cycles = 4; I_LDX(read(absoluteY()));  break;
             case 0xA0: I_LDY(immediate());       cycles = 2; break;
             case 0xA4: I_LDY(read(zeroPage()));  cycles = 3; break;
             case 0xB4: I_LDY(read(zeroPageX())); cycles = 4; break;
             case 0xAC: I_LDY(read(absolute()));  cycles = 4; break;
-            case 0xBC: I_LDY(read(absoluteX())); cycles = 4; break;
+            case 0xBC: cycles = 4; I_LDY(read(absoluteX()));  break;
             case 0x4A: I_LSR_ACC();              cycles = 2; break;
             case 0x46: I_LSR(zeroPage());        cycles = 5; break;
             case 0x56: I_LSR(zeroPageX());       cycles = 6; break;
             case 0x4E: I_LSR(absolute());        cycles = 6; break;
-            case 0x5E: I_LSR(absoluteX());       cycles = 7; break;
+            case 0x5E: cycles = 7; I_LSR(absoluteX());        break;
             case 0xEA: I_NOP();                  cycles = 2; break;
             case 0x09: I_ORA(immediate());       cycles = 2; break;
             case 0x05: I_ORA(read(zeroPage()));  cycles = 3; break;
             case 0x15: I_ORA(read(zeroPageX())); cycles = 4; break;
             case 0x0D: I_ORA(read(absolute()));  cycles = 4; break;
-            case 0x1D: I_ORA(read(absoluteX())); cycles = 4; break;
-            case 0x19: I_ORA(read(absoluteY())); cycles = 4; break;
+            case 0x1D: cycles = 4; I_ORA(read(absoluteX()));  break;
+            case 0x19: cycles = 4; I_ORA(read(absoluteY()));  break;
             case 0x01: I_ORA(read(indirectX())); cycles = 6; break;
-            case 0x11: I_ORA(read(indirectY())); cycles = 5; break;
+            case 0x11: cycles = 5; I_ORA(read(indirectY()));  break;
             case 0x48: I_PHA();                  cycles = 3; break;
             case 0x08: I_PHP();                  cycles = 3; break;
             case 0x68: I_PLA();                  cycles = 4; break;
@@ -730,32 +735,32 @@ void CPU6502::clock()
             case 0x26: I_ROL(zeroPage());        cycles = 5; break;
             case 0x36: I_ROL(zeroPageX());       cycles = 6; break;
             case 0x2E: I_ROL(absolute());        cycles = 6; break;
-            case 0x3E: I_ROL(absoluteX());       cycles = 7; break;
+            case 0x3E: cycles = 7; I_ROL(absoluteX());        break;
             case 0x6A: I_ROR_ACC();              cycles = 2; break;
             case 0x66: I_ROR(zeroPage());        cycles = 5; break;
             case 0x76: I_ROR(zeroPageX());       cycles = 6; break;
             case 0x6E: I_ROR(absolute());        cycles = 6; break;
-            case 0x7E: I_ROR(absoluteX());       cycles = 7; break;
+            case 0x7E: cycles = 7; I_ROR(absoluteX());        break;
             case 0x40: I_RTI();                  cycles = 6; break;
             case 0x60: I_RTS();                  cycles = 6; break;
             case 0xE9: I_SBC(immediate());       cycles = 2; break;
             case 0xE5: I_SBC(read(zeroPage()));  cycles = 3; break;
             case 0xF5: I_SBC(read(zeroPageX())); cycles = 4; break;
             case 0xED: I_SBC(read(absolute()));  cycles = 4; break;
-            case 0xFD: I_SBC(read(absoluteX())); cycles = 4; break;
-            case 0xF9: I_SBC(read(absoluteY())); cycles = 4; break;
+            case 0xFD: cycles = 4; I_SBC(read(absoluteX()));  break;
+            case 0xF9: cycles = 4; I_SBC(read(absoluteY()));  break;
             case 0xE1: I_SBC(read(indirectX())); cycles = 6; break;
-            case 0xF1: I_SBC(read(indirectY())); cycles = 5; break;
+            case 0xF1: cycles = 5; I_SBC(read(indirectY()));  break;
             case 0x38: I_SEC();                  cycles = 2; break;
             case 0xF8: I_SED();                  cycles = 2; break;
             case 0x78: I_SEI();                  cycles = 2; break;
             case 0x85: I_STA(zeroPage());        cycles = 3; break;
             case 0x95: I_STA(zeroPageX());       cycles = 4; break;
             case 0x8D: I_STA(absolute());        cycles = 4; break;
-            case 0x9D: I_STA(absoluteX());       cycles = 5; break;
-            case 0x99: I_STA(absoluteY());       cycles = 5; break;
+            case 0x9D: cycles = 5; I_STA(absoluteX_write());        break;
+            case 0x99: cycles = 5; I_STA(absoluteY_write());        break;
             case 0x81: I_STA(indirectX());       cycles = 6; break;
-            case 0x91: I_STA(indirectY());       cycles = 6; break;
+            case 0x91: cycles = 6; I_STA(indirectY_write());        break;
             case 0x86: I_STX(zeroPage());        cycles = 3; break;
             case 0x96: I_STX(zeroPageY());       cycles = 4; break;
             case 0x8E: I_STX(absolute());        cycles = 4; break;
@@ -768,9 +773,575 @@ void CPU6502::clock()
             case 0x8A: I_TXA();                  cycles = 2; break;
             case 0x9A: I_TXS();                  cycles = 2; break;
             case 0x98: I_TYA();                  cycles = 2; break;
-            // ... all 256 opcodes
+            case 0x04: case 0x44: case 0x64:
+                fetch();
+                cycles = 3;
+                break;
+            case 0x0C:
+                fetch();
+                fetch();
+                cycles = 4;
+                break;
+            case 0x14: case 0x34: case 0x54:
+            case 0x74: case 0xD4: case 0xF4:
+                fetch();
+                cycles = 4;
+                break;
+            case 0x1A: case 0x3A: case 0x5A:
+            case 0x7A: case 0xDA: case 0xFA:
+                cycles = 2;
+                break;
+            case 0x1C: case 0x3C: case 0x5C:
+            case 0x7C: case 0xDC: case 0xFC:
+                cycles = 4;
+                absoluteX();
+                break;
+            case 0x80:
+                fetch();
+                cycles = 2;
+                break;
+            case 0xA3:
+                {
+                    uint8_t val = read(indirectX());
+                    A = val;
+                    X = val;
+                    setFlag(Z, A == 0);
+                    setFlag(N, A & 0x80);
+                    cycles = 6;
+                }
+                break;
+            case 0xA7:
+                {
+                    uint8_t val = read(zeroPage());
+                    A = val; X = val;
+                    setFlag(Z, A == 0);
+                    setFlag(N, A & 0x80);
+                    cycles = 3;
+                }
+                break;
+            case 0xB7:
+                {
+                    uint8_t val = read(zeroPageY());
+                    A = val; X = val;
+                    setFlag(Z, A == 0);
+                    setFlag(N, A & 0x80);
+                    cycles = 4;
+                }
+                break;
+            case 0xAF:
+                {
+                    uint8_t val = read(absolute());
+                    A = val; X = val;
+                    setFlag(Z, A == 0);
+                    setFlag(N, A & 0x80);
+                    cycles = 4;
+                }
+                break;
+            case 0xBF:
+                {
+                    cycles = 4;
+                    uint8_t val = read(absoluteY());
+                    A = val; X = val;
+                    setFlag(Z, A == 0);
+                    setFlag(N, A & 0x80);
+                }
+                break;
+            case 0xB3:
+                {
+                    cycles = 5;
+                    uint8_t val = read(indirectY());
+                    A = val; X = val;
+                    setFlag(Z, A == 0);
+                    setFlag(N, A & 0x80);
+                }
+                break;
+            case 0x83: write(indirectX(), A & X); cycles = 6; break;
+            case 0x87: write(zeroPage(), A & X);  cycles = 3; break;
+            case 0x8F: write(absolute(), A & X);  cycles = 4; break;
+            case 0x97: write(zeroPageY(), A & X); cycles = 4; break;
+            case 0xEB: I_SBC(immediate()); cycles = 2; break;
+            case 0xC3:
+                {
+                    uint16_t addr = indirectX();
+                    uint8_t val =  read(addr) - 1;
+                    write(addr, val);
+                    setFlag(C, A >= val);
+                    setFlag(Z, A == val);
+                    setFlag(N, (A - val) & 0x80);
+                    cycles = 8;
+                }
+                break;
+            case 0xC7:
+                {
+                    uint16_t addr = zeroPage();
+                    uint8_t val = read(addr) - 1;
+                    write(addr, val);
+                    setFlag(C, A >= val);
+                    setFlag(Z, A == val);
+                    setFlag(N, (A - val) & 0x80);
+                    cycles = 5;
+                }
+                break;
+            case 0xCF:
+                {
+                    uint16_t addr = absolute();
+                    uint8_t val = read(addr) - 1;
+                    write(addr, val);
+                    setFlag(C, A >= val);
+                    setFlag(Z, A == val);
+                    setFlag(N, (A - val) & 0x80);
+                    cycles = 6;
+                }
+                break;
+            case 0xD3:
+                {
+                    cycles = 8;
+                    uint16_t addr = indirectY_write();
+                    uint8_t val = read(addr) - 1;
+                    write(addr, val);
+                    setFlag(C, A >= val);
+                    setFlag(Z, A == val);
+                    setFlag(N, (A - val) & 0x80);
+                }
+                break;
+            case 0xD7:
+                {
+                    uint16_t addr = zeroPageX();
+                    uint8_t val = read(addr) - 1;
+                    write(addr, val);
+                    setFlag(C, A >= val);
+                    setFlag(Z, A == val);
+                    setFlag(N, (A - val) & 0x80);
+                    cycles = 6;
+                }
+                break;
+            case 0xDB:
+                {
+                    cycles = 7;
+                    uint16_t addr = absoluteY_write();
+                    uint8_t val = read(addr) - 1;
+                    write(addr, val);
+                    setFlag(C, A >= val);
+                    setFlag(Z, A == val);
+                    setFlag(N, (A - val) & 0x80);
+                }
+                break;
+            case 0xDF:
+                {
+                    cycles = 7;
+                    uint16_t addr = absoluteX_write();
+                    uint8_t val = read(addr) - 1;
+                    write(addr, val);
+                    setFlag(C, A >= val);
+                    setFlag(Z, A == val);
+                    setFlag(N, (A - val) & 0x80);
+                }
+                break;
+            case 0xE3:
+                {
+                    uint16_t addr = indirectX();
+                    uint8_t val = read(addr) + 1;
+                    write(addr, val);
+                    I_SBC(val);
+                    cycles = 8;
+                }
+                break;
+            case 0xE7:
+                {
+                    uint16_t addr = zeroPage();
+                    uint8_t val = read(addr) + 1;
+                    write(addr, val);
+                    I_SBC(val);
+                    cycles = 5;
+                }
+                break;
+            case 0xEF:
+                {
+                    uint16_t addr = absolute();
+                    uint8_t val = read(addr) + 1;
+                    write(addr, val);
+                    I_SBC(val);
+                    cycles = 6;
+                }
+                break;
+            case 0xF3:
+                {
+                    cycles = 8;
+                    uint16_t addr = indirectY_write();
+                    uint8_t val = read(addr) + 1;
+                    write(addr, val);
+                    I_SBC(val);
+                }
+                break;
+            case 0xF7:
+                {
+                    uint16_t addr = zeroPageX();
+                    uint8_t val = read(addr) + 1;
+                    write(addr, val);
+                    I_SBC(val);
+                    cycles = 6;
+                }
+                break;
+            case 0xFB:
+                {
+                    cycles = 7;
+                    uint16_t addr = absoluteY_write();
+                    uint8_t val = read(addr) + 1;
+                    write(addr, val);
+                    I_SBC(val);
+                }
+                break;
+            case 0xFF:
+                {
+                    cycles = 7;
+                    uint16_t addr = absoluteX_write();
+                    uint8_t val = read(addr) + 1;
+                    write(addr, val);
+                    I_SBC(val);
+                }
+                break;
+            case 0x03:
+                {
+                    uint16_t addr = indirectX();
+                    setFlag(C, read(addr) & 0x80);
+                    uint8_t val = read(addr) << 1;
+                    write(addr, val);
+                    A |= val;
+                    setFlag(Z, A == 0);
+                    setFlag(N, A & 0x80);
+                    cycles = 8;
+                }
+                break;
+            case 0x07:
+                {
+                    uint16_t addr = zeroPage();
+                    setFlag(C, read(addr) & 0x80);
+                    uint8_t val = read(addr) << 1;
+                    write(addr, val);
+                    A |= val;
+                    setFlag(Z, A == 0);
+                    setFlag(N, A & 0x80);
+                    cycles = 5;
+                }
+                break;
+            case 0x0F:
+                {
+                    uint16_t addr = absolute();
+                    setFlag(C, read(addr) & 0x80);
+                    uint8_t val = read(addr) << 1;
+                    write(addr, val);
+                    A |= val;
+                    setFlag(Z, A == 0);
+                    setFlag(N, A & 0x80);
+                    cycles = 6;
+                }
+                break;
+            case 0x13:
+                {
+                    cycles = 8;
+                    uint16_t addr = indirectY_write();
+                    setFlag(C, read(addr) & 0x80);
+                    uint8_t val = read(addr) << 1;
+                    write(addr, val);
+                    A |= val;
+                    setFlag(Z, A == 0);
+                    setFlag(N, A & 0x80);
+                }
+                break;
+            case 0x17:
+                {
+                    uint16_t addr = zeroPageX();
+                    setFlag(C, read(addr) & 0x80);
+                    uint8_t val = read(addr) << 1;
+                    write(addr, val);
+                    A |= val;
+                    setFlag(Z, A == 0);
+                    setFlag(N, A & 0x80);
+                    cycles = 6;
+                }
+                break;
+            case 0x1B:
+                {
+                    cycles = 7;
+                    uint16_t addr = absoluteY_write();
+                    setFlag(C, read(addr) & 0x80);
+                    uint8_t val = read(addr) << 1;
+                    write(addr, val);
+                    A |= val;
+                    setFlag(Z, A == 0);
+                    setFlag(N, A & 0x80);
+                }
+                break;
+            case 0x1F:
+                {
+                    cycles = 7;
+                    uint16_t addr = absoluteX_write();
+                    setFlag(C, read(addr) & 0x80);
+                    uint8_t val = read(addr) << 1;
+                    write(addr, val);
+                    A |= val;
+                    setFlag(Z, A == 0);
+                    setFlag(N, A & 0x80);
+                }
+                break;
+            case 0x23:
+                {
+                    uint16_t addr = indirectX();
+                    uint8_t oldCarry = getFlag(C);
+                    setFlag(C, read(addr) & 0x80);
+                    uint8_t val = (read(addr) << 1) | oldCarry;
+                    write(addr, val);
+                    A &= val;
+                    setFlag(Z, A == 0);
+                    setFlag(N, A & 0x80);
+                    cycles = 8;
+                }
+                break;
+            case 0x27:
+                {
+                    uint16_t addr = zeroPage();
+                    uint8_t oldCarry = getFlag(C);
+                    setFlag(C, read(addr) & 0x80);
+                    uint8_t val = (read(addr) << 1) | oldCarry;
+                    write(addr, val);
+                    A &= val;
+                    setFlag(Z, A == 0);
+                    setFlag(N, A & 0x80);
+                    cycles = 5;
+                }
+                break;
+            case 0x2F:
+                {
+                    uint16_t addr = absolute();
+                    uint8_t oldCarry = getFlag(C);
+                    setFlag(C, read(addr) & 0x80);
+                    uint8_t val = (read(addr) << 1) | oldCarry;
+                    write(addr, val);
+                    A &= val;
+                    setFlag(Z, A == 0);
+                    setFlag(N, A & 0x80);
+                    cycles = 6;
+                }
+                break;
+            case 0x33:
+                {
+                    cycles = 8;
+                    uint16_t addr = indirectY_write();
+                    uint8_t oldCarry = getFlag(C);
+                    setFlag(C, read(addr) & 0x80);
+                    uint8_t val = (read(addr) << 1) | oldCarry;
+                    write(addr, val);
+                    A &= val;
+                    setFlag(Z, A == 0);
+                    setFlag(N, A & 0x80);
+                }
+                break;
+            case 0x37:
+                {
+                    uint16_t addr = zeroPageX();
+                    uint8_t oldCarry = getFlag(C);
+                    setFlag(C, read(addr) & 0x80);
+                    uint8_t val = (read(addr) << 1) | oldCarry;
+                    write(addr, val);
+                    A &= val;
+                    setFlag(Z, A == 0);
+                    setFlag(N, A & 0x80);
+                    cycles = 6;
+                }
+                break;
+            case 0x3B:
+                {
+                    cycles = 7;
+                    uint16_t addr = absoluteY_write();
+                    uint8_t oldCarry = getFlag(C);
+                    setFlag(C, read(addr) & 0x80);
+                    uint8_t val = (read(addr) << 1) | oldCarry;
+                    write(addr, val);
+                    A &= val;
+                    setFlag(Z, A == 0);
+                    setFlag(N, A & 0x80);
+                }
+                break;
+            case 0x3F:
+                {
+                    cycles = 7;
+                    uint16_t addr = absoluteX_write();
+                    uint8_t oldCarry = getFlag(C);
+                    setFlag(C, read(addr) & 0x80);
+                    uint8_t val = (read(addr) << 1) | oldCarry;
+                    write(addr, val);
+                    A &= val;
+                    setFlag(Z, A == 0);
+                    setFlag(N, A & 0x80);
+                }
+                break;
+            case 0x43:
+                {
+                    uint16_t addr = indirectX();
+                    setFlag(C, read(addr) & 0x01);
+                    uint8_t val = read(addr) >> 1;
+                    write(addr, val);
+                    A ^= val;
+                    setFlag(Z, A == 0);
+                    setFlag(N, A & 0x80);
+                    cycles = 8;
+                }
+                break;
+            case 0x47:
+                {
+                    uint16_t addr = zeroPage();
+                    setFlag(C, read(addr) & 0x01);
+                    uint8_t val = read(addr) >> 1;
+                    write(addr, val);
+                    A ^= val;
+                    setFlag(Z, A == 0);
+                    setFlag(N, A & 0x80);
+                    cycles = 5;
+                }
+                break;
+            case 0x4F:
+                {
+                    uint16_t addr = absolute();
+                    setFlag(C, read(addr) & 0x01);
+                    uint8_t val = read(addr) >> 1;
+                    write(addr, val);
+                    A ^= val;
+                    setFlag(Z, A == 0);
+                    setFlag(N, A & 0x80);
+                    cycles = 6;
+                }
+                break;
+            case 0x53:
+                {
+                    cycles = 8;
+                    uint16_t addr = indirectY_write();
+                    setFlag(C, read(addr) & 0x01);
+                    uint8_t val = read(addr) >> 1;
+                    write(addr, val);
+                    A ^= val;
+                    setFlag(Z, A == 0);
+                    setFlag(N, A & 0x80);
+                }
+                break;
+            case 0x57:
+                {
+                    uint16_t addr = zeroPageX();
+                    setFlag(C, read(addr) & 0x01);
+                    uint8_t val = read(addr) >> 1;
+                    write(addr, val);
+                    A ^= val;
+                    setFlag(Z, A == 0);
+                    setFlag(N, A & 0x80);
+                    cycles = 6;
+                }
+                break;
+            case 0x5B:
+                {
+                    cycles = 7;
+                    uint16_t addr = absoluteY_write();
+                    setFlag(C, read(addr) & 0x01);
+                    uint8_t val = read(addr) >> 1;
+                    write(addr, val);
+                    A ^= val;
+                    setFlag(Z, A == 0);
+                    setFlag(N, A & 0x80);
+                }
+                break;
+            case 0x5F:
+                {
+                    cycles = 7;
+                    uint16_t addr = absoluteX_write();
+                    setFlag(C, read(addr) & 0x01);
+                    uint8_t val = read(addr) >> 1;
+                    write(addr, val);
+                    A ^= val;
+                    setFlag(Z, A == 0);
+                    setFlag(N, A & 0x80);
+                }
+                break;
+            case 0x63:
+                {
+                    uint16_t addr = indirectX();
+                    uint8_t oldCarry = getFlag(C);
+                    setFlag(C, read(addr) & 0x01);
+                    uint8_t val = (read(addr) >> 1) | (oldCarry << 7);
+                    write(addr, val);
+                    I_ADC(val);
+                    cycles = 8;
+                }
+                break;
+            case 0x67:
+                {
+                    uint16_t addr = zeroPage();
+                    uint8_t oldCarry = getFlag(C);
+                    setFlag(C, read(addr) & 0x01);
+                    uint8_t val = (read(addr) >> 1) | (oldCarry << 7);
+                    write(addr, val);
+                    I_ADC(val);
+                    cycles = 5;
+                }
+                break;
+            case 0x6F:
+                {
+                    uint16_t addr = absolute();
+                    uint8_t oldCarry = getFlag(C);
+                    setFlag(C, read(addr) & 0x01);
+                    uint8_t val = (read(addr) >> 1) | (oldCarry << 7);
+                    write(addr, val);
+                    I_ADC(val);
+                    cycles = 6;
+                }
+                break;
+            case 0x73:
+                {
+                    cycles = 8;
+                    uint16_t addr = indirectY_write();
+                    uint8_t oldCarry = getFlag(C);
+                    setFlag(C, read(addr) & 0x01);
+                    uint8_t val = (read(addr) >> 1) | (oldCarry << 7);
+                    write(addr, val);
+                    I_ADC(val);
+                }
+                break;
+            case 0x77:
+                {
+                    uint16_t addr = zeroPageX();
+                    uint8_t oldCarry = getFlag(C);
+                    setFlag(C, read(addr) & 0x01);
+                    uint8_t val = (read(addr) >> 1) | (oldCarry << 7);
+                    write(addr, val);
+                    I_ADC(val);
+                    cycles = 6;
+                }
+                break;
+            case 0x7B:
+                {
+                    cycles = 7;
+                    uint16_t addr = absoluteY_write();
+                    uint8_t oldCarry = getFlag(C);
+                    setFlag(C, read(addr) & 0x01);
+                    uint8_t val = (read(addr) >> 1) | (oldCarry << 7);
+                    write(addr, val);
+                    I_ADC(val);
+                }
+                break;
+            case 0x7F:
+                {
+                    cycles = 7;
+                    uint16_t addr = absoluteX_write();
+                    uint8_t oldCarry = getFlag(C);
+                    setFlag(C, read(addr) & 0x01);
+                    uint8_t val = (read(addr) >> 1) | (oldCarry << 7);
+                    write(addr, val);
+                    I_ADC(val);
+                }
+                break;
             default: break;  // illegal opcodes
         }
+        totalCycles += cycles;
     }
-    cycles--;
+    if (cycles > 0)
+    {
+        cycles--;
+    }
 }
