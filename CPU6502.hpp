@@ -118,8 +118,8 @@ class CPU6502
         uint8_t  fetch()                            { return read(PC++); }
         
         // Flags
-        enum Flags { C=0x01, Z=0x02, I=0x04, D=0x08, B=0x10, U=0x20, V=0x40, N=0x80 };
-        uint8_t getFlag(uint8_t f)         { return (P & f) ? 1 : 0;}
+        enum class Flags { C=0x01, Z=0x02, I=0x04, D=0x08, B=0x10, U=0x20, V=0x40, N=0x80 };
+        const uint8_t getFlag(uint8_t f)         { return (P & f) ? 1 : 0;}
         void    setFlag(uint8_t f, bool v) { v ? (P |= f) : (P &= ~f);}
 
         // Addressing
