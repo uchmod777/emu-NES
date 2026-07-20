@@ -1,8 +1,11 @@
+#pragma once
+
 #include <cstdint>
 #include <array>
-#include "CPU6502.hpp"
 #include "Cartridge.hpp"
 #include "PPU.hpp"
+
+class CPU6502;
 
 class Bus
 {

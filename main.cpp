@@ -1,11 +1,18 @@
 #include "CPU6502.hpp"
-#include "Loader.hpp"
+#include "Bus.hpp"
+#include "Cartridge.hpp"
 #include <fstream>
 
 int main()
 {
+    Cartridge cart("nestest.nes");
+    Bus bus;
     CPU6502 cpu;
-    LoadROM(cpu, "nestest.nes");
+
+    bus.connectCartridge(&cart);
+    bus.connectCPU(&cpu);
+    cpu.connectBus(&bus);
+
     cpu.Reset();
     cpu.setPC(0xC000);
 

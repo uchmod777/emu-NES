@@ -4,16 +4,17 @@
 #include <iostream>
 #include <fstream>
 #include <iomanip>
+#include "Bus.hpp"
 
 class CPU6502 
 {
     public:
         void setPC(uint16_t addr) { PC = addr; }
+        void connectBus(Bus* b);
         uint8_t getCycles() { return cycles; }
         void NMI();
         void IRQ();
         void Reset();
-        void LoadMemory(uint16_t addr, uint8_t data);
         void LogCPU(std::ofstream& logFile, uint64_t totalCycles);
         void clock(std::ofstream& logFile); // CPU Fetch, Decode, Execute
         void I_ADC(uint8_t operand);  // Add with Carry
@@ -111,14 +112,14 @@ class CPU6502
         // Logging
         uint64_t totalCycles = 0;
 
-        // Memory
-        uint8_t  memory[65536];  // 64 KB
-        uint8_t  read(uint16_t addr)                { return memory[addr]; }
-        void     write(uint16_t addr, uint8_t data) { memory[addr] = data; }
+        // Bus & Memory
+        Bus* bus;
+        uint8_t  read(uint16_t addr)                { return bus->read(addr); }
+        void     write(uint16_t addr, uint8_t data) { bus->write(addr, data); }
         uint8_t  fetch()                            { return read(PC++); }
         
         // Flags
-        enum class Flags { C=0x01, Z=0x02, I=0x04, D=0x08, B=0x10, U=0x20, V=0x40, N=0x80 };
+        enum Flags { C=0x01, Z=0x02, I=0x04, D=0x08, B=0x10, U=0x20, V=0x40, N=0x80 };
         const uint8_t getFlag(uint8_t f)         { return (P & f) ? 1 : 0;}
         void    setFlag(uint8_t f, bool v) { v ? (P |= f) : (P &= ~f);}
 

@@ -3,14 +3,11 @@
 #include <cerrno>
 #include <cstring>
 
-void CPU6502::LoadMemory(uint16_t addr, uint8_t data)
-{
-    write(addr, data);
-}
+void CPU6502::connectBus(Bus* b) { bus = b; }
 
 void CPU6502::LogCPU(std::ofstream& logFile, uint64_t totalCycles)
 {
-    uint8_t opcode = memory[PC];
+    uint8_t opcode = read(PC);
     uint8_t len    = instructionSizes[opcode];
 
     // Build raw bytes string dynamically based on length
@@ -20,10 +17,10 @@ void CPU6502::LogCPU(std::ofstream& logFile, uint64_t totalCycles)
         snprintf(bytes, sizeof(bytes), "%02X      ", opcode);
     } else if (len == 2)
     {
-        snprintf(bytes, sizeof(bytes), "%02X %02X   ", opcode, memory[PC+1]);
+        snprintf(bytes, sizeof(bytes), "%02X %02X   ", opcode, read(PC + 1));
     } else if (len == 3)
     {
-        snprintf(bytes, sizeof(bytes), "%02X %02X %02X", opcode, memory[PC+1], memory[PC+2]);
+        snprintf(bytes, sizeof(bytes), "%02X %02X %02X", opcode, read(PC+1), read(PC+2));
     }
 
     logFile << std::uppercase << std::hex << std::setfill('0')
