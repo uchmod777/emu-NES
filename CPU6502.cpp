@@ -613,10 +613,9 @@ void CPU6502::I_TYA()
     setFlag(N, A & 0x80);
 }
 
-void CPU6502::clock(std::ofstream& logFile)
+void CPU6502::clock()
 {
     if (cycles == 0) {
-        LogCPU(logFile, totalCycles);
         uint8_t opcode = fetch();
         switch (opcode) {
             case 0x69: I_ADC(immediate());       cycles = 2; break;

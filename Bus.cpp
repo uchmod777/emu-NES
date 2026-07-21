@@ -31,7 +31,7 @@ uint8_t Bus::read(uint16_t addr)
     // PPU registers - 8 bytes mirrored across 0x2000-0x3FFF
     if (addr >= 0x2000 && addr <= 0x3FFF)
     {
-        return 0x00;  // stub until PPU is built
+        return ppu->cpuRead(addr);
     }
 
     // Controller 1
@@ -71,6 +71,18 @@ void Bus::write(uint16_t addr, uint8_t data)
     // PPU registers - 8 bytes mirrored across 0x2000-0x3FFF
     if (addr >= 0x2000 && addr <= 0x3FFF)
     {
+        ppu->cpuWrite(addr, data);
+        return;
+    }
+
+    // OAM DMA
+    if (addr == 0x4014)
+    {
+        uint16_t base = (uint16_t)data << 8;
+        for (int i = 0; i < 256; i++)
+        {
+            ppu->writeOAM(i, read(base + i));
+        }
         return;
     }
 

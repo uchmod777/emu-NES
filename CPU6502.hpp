@@ -16,7 +16,7 @@ class CPU6502
         void IRQ();
         void Reset();
         void LogCPU(std::ofstream& logFile, uint64_t totalCycles);
-        void clock(std::ofstream& logFile); // CPU Fetch, Decode, Execute
+        void clock(); // CPU Fetch, Decode, Execute
         void I_ADC(uint8_t operand);  // Add with Carry
         void I_AND(uint8_t operand);   // Bitwise AND
         void I_ASL_ACC();  // Arithmetic Shift Left, Accumulator

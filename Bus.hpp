@@ -16,6 +16,7 @@ class Bus
         void    connectPPU(PPU* p);
         void    connectCartridge(Cartridge* c);
         void    setControllerState(uint8_t controller, uint8_t state);
+        uint8_t getControllerState(uint8_t controller) { return controllerState[controller]; }
     private:
         CPU6502*    cpu;
         PPU*        ppu;
